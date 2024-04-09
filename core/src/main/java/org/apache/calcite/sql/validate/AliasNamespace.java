@@ -68,8 +68,10 @@ public class AliasNamespace extends AbstractNamespace {
     final List<String> nameList = new ArrayList<>();
     final List<SqlNode> operands = call.getOperandList();
     final SqlValidatorNamespace childNs;
-    // Skip over fetching for LATERAL namespace since they are not registered, use subquery instead
+
     if (operands.get(0).getKind() == SqlKind.LATERAL) {
+      // We want to use the underlying select under the lateral operator, not the
+      // lateral itself, to use as validation for the alias list
       SqlNode lateral = operands.get(0);
       childNs = validator.getNamespace(((SqlCall) lateral).operand(0));
     } else {

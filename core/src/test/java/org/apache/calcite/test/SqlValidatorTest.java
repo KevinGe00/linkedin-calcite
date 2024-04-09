@@ -30,6 +30,7 @@ import org.apache.calcite.sql.SqlSpecialOperator;
 import org.apache.calcite.sql.fun.SqlLibrary;
 import org.apache.calcite.sql.fun.SqlLibraryOperatorTableFactory;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.test.SqlTester;
 import org.apache.calcite.sql.type.ArraySqlType;
@@ -11516,6 +11517,20 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
     }
   }
 
+  /** Test case for
+   * <a href="https://github.com/linkedin/linkedin-calcite/pull/98">
+   * Preserve LATERAL keyword during validation #98</a>. */
+  @Test
+  public void testLateralKeywordExistsAfterValidation() throws SqlParseException {
+    String sql = "SELECT * FROM emp CROSS JOIN LATERAL "
+        + "(SELECT * FROM dept WHERE deptno = emp.deptno)";
+
+    SqlNode node = tester.parseQuery(sql);
+    final SqlValidator validator = tester.getValidator();
+    final SqlNode validatedNode = validator.validate(node);
+
+    assertTrue(validatedNode.toString().contains("LATERAL"));
+  }
 }
 
 // End SqlValidatorTest.java

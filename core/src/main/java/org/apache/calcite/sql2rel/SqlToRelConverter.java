@@ -1993,18 +1993,15 @@ public class SqlToRelConverter {
       return;
     }
 
-    // Skip over LATERAL conversion
-    if (from.getKind() == SqlKind.LATERAL) {
-      from = ((SqlCall) from).operand(0);
-    }
-
     final SqlCall call;
     final SqlNode[] operands;
     switch (from.getKind()) {
     case MATCH_RECOGNIZE:
       convertMatchRecognize(bb, (SqlCall) from);
       return;
-
+    case LATERAL:
+      convertFrom(bb, ((SqlCall) from).operand(0));
+      return;
     case AS:
       call = (SqlCall) from;
       convertFrom(bb, call.operand(0));
@@ -2080,8 +2077,12 @@ public class SqlToRelConverter {
               ((DelegatingScope) bb.scope).getParent());
       final Blackboard leftBlackboard =
           createBlackboard(leftScope, null, false);
+      // We don't register the scopes of LATERAL SqlNodes, so we need to
+      // remove them before looking up the associated scope
+      // Note that LATERALs could only appear on the right side of a join
+      SqlNode rightWithoutLaterals = right.accept(new SqlUtil.LateralRemover());
       final SqlValidatorScope rightScope =
-          Util.first(validator.getJoinScope(right),
+          Util.first(validator.getJoinScope(rightWithoutLaterals),
               ((DelegatingScope) bb.scope).getParent());
       final Blackboard rightBlackboard =
           createBlackboard(rightScope, null, false);

@@ -2293,8 +2293,12 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
           alias,
           forceNullable);
 
-      // Keep preceding "LATERAL" keyword from joins with inner SELECT subquery
-      if (lateral && kind == SqlKind.SELECT) {
+      // Preserve "LATERAL" keyword in validated node:
+      // 1. Joins with inner SELECT subquery preceded by LATERAL
+      //    Example: SELECT ... FROM LATERAL(SELECT ...) AS t
+      // 2. Joins with UNNEST operator preceded by LATERAL
+      //    Example: SELECT ... FROM LATERAL(UNNEST ...) AS t
+      if (lateral && (kind == SqlKind.SELECT) || (kind == SqlKind.UNNEST)) {
         SqlNode lateralNode =
             SqlStdOperatorTable.LATERAL.createCall(POS, newNode);
         return lateralNode;
@@ -3120,6 +3124,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       SqlValidatorScope scope) {
     Objects.requireNonNull(targetRowType);
     switch (node.getKind()) {
+    case LATERAL:
     case AS:
       validateFrom(
           ((SqlCall) node).operand(0),
@@ -3138,10 +3143,6 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
     case UNNEST:
       validateUnnest((SqlCall) node, scope, targetRowType);
       break;
-    case LATERAL:
-      // Validate subquery that LATERAL precedes
-      validateQuery(((SqlCall) node).operand(0), scope, targetRowType);
-      break;
     default:
       validateQuery(node, scope, targetRowType);
       break;
@@ -3149,13 +3150,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
 
     // Validate the namespace representation of the node, just in case the
     // validation did not occur implicitly.
-    if (node.getKind() == SqlKind.LATERAL) {
-      // Skip over fetching for LATERAL namespace since they aren't registered, use subquery instead
-      getNamespace(((SqlCall) node).operand(0), scope)
-          .validate(targetRowType);
-    } else {
-      getNamespace(node, scope).validate(targetRowType);
-    }
+    getNamespace(node, scope).validate(targetRowType);
   }
 
   protected void validateOver(SqlCall call, SqlValidatorScope scope) {

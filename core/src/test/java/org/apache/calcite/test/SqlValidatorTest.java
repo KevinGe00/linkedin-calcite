@@ -11521,13 +11521,31 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
    * <a href="https://github.com/linkedin/linkedin-calcite/pull/98">
    * Preserve LATERAL keyword during validation #98</a>. */
   @Test
-  public void testLateralKeywordExistsAfterValidation() throws SqlParseException {
+  public void testLateralPreservedInLateralSelect() throws SqlParseException {
     String sql = "SELECT * FROM emp CROSS JOIN LATERAL "
         + "(SELECT * FROM dept WHERE deptno = emp.deptno)";
 
     SqlNode node = tester.parseQuery(sql);
     final SqlValidator validator = tester.getValidator();
     final SqlNode validatedNode = validator.validate(node);
+
+    assertTrue(validatedNode.toString().contains("LATERAL"));
+  }
+
+  @Test
+  public void testLateralPreservedInLateralUnnest() throws SqlParseException {
+    // Per SQL std, UNNEST is implicitly LATERAL
+    String sql = "select*from unnest(array[1])";
+    SqlNode node = tester.parseQuery(sql);
+    SqlValidator validator = tester.getValidator();
+    SqlNode validatedNode = validator.validate(node);
+
+    assertTrue(validatedNode.toString().contains("LATERAL"));
+
+    sql = "select c from unnest(array(select deptno from dept)) as t(c)";
+    node = tester.parseQuery(sql);
+    validator = tester.getValidator();
+    validatedNode = validator.validate(node);
 
     assertTrue(validatedNode.toString().contains("LATERAL"));
   }

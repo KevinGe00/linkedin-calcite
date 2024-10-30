@@ -11533,21 +11533,21 @@ public class SqlValidatorTest extends SqlValidatorTestCase {
   }
 
   @Test
-  public void testLateralPreservedInLateralUnnest() throws SqlParseException {
+  public void testLateralKeywordIsNotAddedToUnnest() throws SqlParseException {
     // Per SQL std, UNNEST is implicitly LATERAL
     String sql = "select*from unnest(array[1])";
     SqlNode node = tester.parseQuery(sql);
     SqlValidator validator = tester.getValidator();
     SqlNode validatedNode = validator.validate(node);
 
-    assertTrue(validatedNode.toString().contains("LATERAL"));
+    assertTrue(!validatedNode.toString().contains("LATERAL"));
 
     sql = "select c from unnest(array(select deptno from dept)) as t(c)";
     node = tester.parseQuery(sql);
     validator = tester.getValidator();
     validatedNode = validator.validate(node);
 
-    assertTrue(validatedNode.toString().contains("LATERAL"));
+    assertTrue(!validatedNode.toString().contains("LATERAL"));
   }
 }
 

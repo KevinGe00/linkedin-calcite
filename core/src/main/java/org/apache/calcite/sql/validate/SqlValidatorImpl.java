@@ -2007,6 +2007,23 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
   }
 
   /**
+   * @see #registerFrom(SqlValidatorScope, SqlValidatorScope, boolean, SqlNode, SqlNode, String, SqlNodeList, boolean, boolean, boolean)
+   */
+  private SqlNode registerFrom(
+      SqlValidatorScope parentScope,
+      SqlValidatorScope usingScope,
+      boolean register,
+      final SqlNode node,
+      SqlNode enclosingNode,
+      String alias,
+      SqlNodeList extendList,
+      boolean forceNullable,
+      final boolean lateral) {
+    return registerFrom(parentScope, usingScope, register, node, enclosingNode, alias,
+        extendList, forceNullable, lateral, false);
+  }
+
+  /**
    * Registers scopes and namespaces implied a relational expression in the
    * FROM clause.
    *
@@ -2035,6 +2052,9 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
    * @param lateral       Whether LATERAL is specified, so that items to the
    *                      left of this in the JOIN tree are visible in the
    *                      scope
+   * @param fromLateral   Whether node was nested in a LATERAL node because
+   *                      even if LATERAL is specified, there may not be an explicit
+   *                      LATERAL node in the tree (e.g. UNNEST is implicitly LATERAL)
    * @return registered node, usually the same as {@code node}
    */
   private SqlNode registerFrom(
@@ -2046,7 +2066,8 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       String alias,
       SqlNodeList extendList,
       boolean forceNullable,
-      final boolean lateral) {
+      final boolean lateral,
+      final boolean fromLateral) {
     final SqlKind kind = node.getKind();
 
     SqlNode expr;
@@ -2248,6 +2269,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
           alias,
           extendList,
           forceNullable,
+          true,
           true);
 
     case COLLECTION_TABLE:
@@ -2298,7 +2320,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       //    Example: SELECT ... FROM LATERAL(SELECT ...) AS t
       // 2. Joins with UNNEST operator preceded by LATERAL
       //    Example: SELECT ... FROM LATERAL(UNNEST ...) AS t
-      if (lateral && (kind == SqlKind.SELECT || kind == SqlKind.UNNEST)) {
+      if (fromLateral && (kind == SqlKind.SELECT || kind == SqlKind.UNNEST)) {
         SqlNode lateralNode =
             SqlStdOperatorTable.LATERAL.createCall(POS, newNode);
         return lateralNode;

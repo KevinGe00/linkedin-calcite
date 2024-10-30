@@ -2298,7 +2298,7 @@ public class SqlValidatorImpl implements SqlValidatorWithHints {
       //    Example: SELECT ... FROM LATERAL(SELECT ...) AS t
       // 2. Joins with UNNEST operator preceded by LATERAL
       //    Example: SELECT ... FROM LATERAL(UNNEST ...) AS t
-      if (lateral && (kind == SqlKind.SELECT) || (kind == SqlKind.UNNEST)) {
+      if (lateral && (kind == SqlKind.SELECT || kind == SqlKind.UNNEST)) {
         SqlNode lateralNode =
             SqlStdOperatorTable.LATERAL.createCall(POS, newNode);
         return lateralNode;

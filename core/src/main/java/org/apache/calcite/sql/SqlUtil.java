@@ -31,6 +31,7 @@ import org.apache.calcite.sql.type.SqlTypeFamily;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.type.SqlTypeUtil;
 import org.apache.calcite.sql.util.SqlBasicVisitor;
+import org.apache.calcite.sql.util.SqlShuttle;
 import org.apache.calcite.sql.validate.SqlNameMatcher;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.util.BarfingInvocationHandler;
@@ -1077,6 +1078,17 @@ public abstract class SqlUtil {
 
     @Override public Void visit(SqlDataTypeSpec type) {
       return check(type);
+    }
+  }
+
+  /** Walks over a {@link org.apache.calcite.sql.SqlNode} tree and removes any
+   * instance of a LATERAL operator. */
+  public static class LateralRemover extends SqlShuttle {
+    @Override public SqlNode visit(SqlCall call) {
+      if (call.getKind() == SqlKind.LATERAL) {
+        return call.operand(0).accept(this);
+      }
+      return super.visit(call);
     }
   }
 }

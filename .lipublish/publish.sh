@@ -18,11 +18,11 @@
 echo "!!This will change the pom.xml files and you will need to revert them. If you have local changes, exit now and stash them!!"
 
 while [ -z "$SONATYPE_TOKEN_USERNAME" ]; do
-  echo "Please provide your sonatype username"
+  echo "Please provide your sonatype token username"
   read SONATYPE_TOKEN_USERNAME
 done
 while [ -z "$SONATYPE_TOKEN_PASSWORD" ]; do
-  echo "Please provide your sonatype password"
+  echo "Please provide your sonatype token password"
   read SONATYPE_TOKEN_PASSWORD
   echo
 done
